@@ -1,0 +1,23 @@
+useDynLib("nhlscrapr")
+
+export(full.game.database,
+
+       download.single.game,
+       download.games,
+       
+       process.single.game,
+       process.games,
+       
+       retrieve.game,
+       augment.game,
+       
+       construct.rosters,
+       assemble.mega.file,
+       
+		 fold.frames,
+
+       nhlscrapr.everything,
+       
+       player.summary,
+       NP.score
+)
