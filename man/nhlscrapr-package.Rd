@@ -63,10 +63,10 @@ A.C. Thomas <act@acthomas.ca>
   roster.main <- construct.rosters (game.table)
 
   #Replace names with unique ID numbers.
-  sample.plus <- augment.game (sample.game, roster.main$roster)
+  sample.plus <- augment.game (sample.game, roster.main$roster.master)
 
   #Augment all games and put them all in one big database.
-  assemble.mega.file (roster.main, game.table, output.file="mynhlscrapes.RData")
+  assemble.mega.file (roster.main$roster.master, game.table, output.file="mynhlscrapes.RData")
 
 
   #################################################################

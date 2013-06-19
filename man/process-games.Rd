@@ -99,7 +99,7 @@
 
   roster.block <- construct.rosters (game.table)
 
-  g1.aug <- augment.game (g1, roster.block$roster)
+  g1.aug <- augment.game (g1, roster.block$roster.master)
 
 }
 

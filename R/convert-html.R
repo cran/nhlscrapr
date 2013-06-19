@@ -659,66 +659,71 @@ integrate.old.pieces <- function (home.image, away.image,
                                   es.html, pl.html, game) {
   #home.image=game.rec$imh; away.image=game.rec$imv; es.html=game.rec$es; pl.html=game.rec$pl
 
-  es.table <- process.es.new(es.html)
-  pl.table <- process.pl.old(pl.html)
-  if (substr(game,1,1)=="2") pl.table$playbyplay <- pl.table$playbyplay[pl.table$playbyplay$seconds <= 3900,]
+  es.table <- try(process.es.new(es.html), TRUE)
+  if (class(es.table)=="try-error") es.table <- NULL
+  pl.table <- try(process.pl.old(pl.html), TRUE)
+  if (class(pl.table)=="try-error") pl.table <- NULL
+
+  if (length(pl.table) > 0) {
+    if (substr(game,1,1)=="2") pl.table$playbyplay <- pl.table$playbyplay[pl.table$playbyplay$seconds <= 3900,]
   
   # replace with full names.
-  for (ii in which(colnames(pl.table$playbyplay) %in% c("ev.player.1", "ev.player.2", "ev.player.3")))
-    pl.table$playbyplay[,ii] <- es.table$numfirstlast[match(pl.table$playbyplay[,ii],
-                                                             es.table$numlast)]
-  for (ii in which(colnames(pl.table$playbyplay) %in% c(paste0("a",1:6), paste0("h",1:6))))
-    pl.table$playbyplay[pl.table$playbyplay$etype=="GOAL",ii] <-
-      es.table$numfirstlast[match(pl.table$playbyplay[pl.table$playbyplay$etype=="GOAL",ii],
-                                  es.table$numlast)]
-  es.home <- es.table[es.table$hometeam==1,]; es.home <- rbind(es.home, "")
-  es.away <- es.table[es.table$hometeam==0,]; es.away <- rbind(es.away, "")
+    for (ii in which(colnames(pl.table$playbyplay) %in% c("ev.player.1", "ev.player.2", "ev.player.3")))
+      pl.table$playbyplay[,ii] <- es.table$numfirstlast[match(pl.table$playbyplay[,ii],
+                                                              es.table$numlast)]
+    for (ii in which(colnames(pl.table$playbyplay) %in% c(paste0("a",1:6), paste0("h",1:6))))
+      pl.table$playbyplay[pl.table$playbyplay$etype=="GOAL",ii] <-
+        es.table$numfirstlast[match(pl.table$playbyplay[pl.table$playbyplay$etype=="GOAL",ii],
+                                    es.table$numlast)]
+    es.home <- es.table[es.table$hometeam==1,]; es.home <- rbind(es.home, "")
+    es.away <- es.table[es.table$hometeam==0,]; es.away <- rbind(es.away, "")
+    
+    if (length(home.image) == 0) warning ("Home image file does not exist.")
+    if (length(away.image) == 0) warning ("Away image file does not exist.")
   
-  if (length(home.image) == 0) warning ("Home image file does not exist.")
-  if (length(away.image) == 0) warning ("Away image file does not exist.")
-  
-  home.players <- try(pick.out.features (pl.table$playbyplay$seconds, home.image), TRUE)
-  if (class(home.players)=="try-error") home.players <- array(0, c(6, length(pl.table$playbyplay$seconds)))
-  away.players <- try(pick.out.features (pl.table$playbyplay$seconds, away.image), TRUE)
-  if (class(away.players)=="try-error") away.players <- array(0, c(6, length(pl.table$playbyplay$seconds)))
-  
-  home.players[home.players==0] <- nrow(es.home)
-  away.players[away.players==0] <- nrow(es.away)
+    home.players <- try(pick.out.features (pl.table$playbyplay$seconds, home.image), TRUE)
+    if (class(home.players)=="try-error") home.players <- array(0, c(6, length(pl.table$playbyplay$seconds)))
+    away.players <- try(pick.out.features (pl.table$playbyplay$seconds, away.image), TRUE)
+    if (class(away.players)=="try-error") away.players <- array(0, c(6, length(pl.table$playbyplay$seconds)))
+    
+    home.players[home.players==0] <- nrow(es.home)
+    away.players[away.players==0] <- nrow(es.away)
 
   # Players on ice.
-  home.players.names <- t(array(es.home$numfirstlast[home.players], dim(home.players)))
-  away.players.names <- t(array(es.away$numfirstlast[away.players], dim(away.players)))
-
-  pl.table$playbyplay[pl.table$playbyplay$etype!="GOAL",5:10] <- away.players.names[pl.table$playbyplay$etype!="GOAL",]
-  pl.table$playbyplay[pl.table$playbyplay$etype!="GOAL",6+5:10] <- home.players.names[pl.table$playbyplay$etype!="GOAL",]
+    home.players.names <- t(array(es.home$numfirstlast[home.players], dim(home.players)))
+    away.players.names <- t(array(es.away$numfirstlast[away.players], dim(away.players)))
+    
+    pl.table$playbyplay[pl.table$playbyplay$etype!="GOAL",5:10] <- away.players.names[pl.table$playbyplay$etype!="GOAL",]
+    pl.table$playbyplay[pl.table$playbyplay$etype!="GOAL",6+5:10] <- home.players.names[pl.table$playbyplay$etype!="GOAL",]
 
 
   #Add changes.
-  orig.rec <- dim(pl.table$playbyplay)[1]
-  for (kk in 1:(orig.rec-1)) {
-    past <- na.omit(unlist(pl.table$playbyplay[kk,6:17-1]))
-    future <- na.omit(unlist(pl.table$playbyplay[kk+1,6:17-1]))
-    if (pl.table$playbyplay[kk,3] < pl.table$playbyplay[kk+1,3]) 
-      if (length(past) != length(future)) {
-        new.record <- pl.table$playbyplay[kk,]
-        new.record[1,4] <- "CHANGE"
-        new.record$ev.team <- ""
-        new.record[1,3] <- mean(c(pl.table$playbyplay[kk,3], pl.table$playbyplay[kk+1,3]))
-        pl.table$playbyplay <- rbind(pl.table$playbyplay, new.record)
-      } else if (any(sort(past) != sort(future))) {
-        new.record <- pl.table$playbyplay[kk,]
-        new.record[1,4] <- "CHANGE"
-        new.record$ev.team <- ""
-        new.record[1,3] <- mean(c(pl.table$playbyplay[kk,3], pl.table$playbyplay[kk+1,3]))
-        pl.table$playbyplay <- rbind(pl.table$playbyplay, new.record)
-      }
-  }
-  pl.table$playbyplay <- pl.table$playbyplay[order(pl.table$playbyplay[,3]),]
-  pl.table$playbyplay[,1] <- 1:dim(pl.table$playbyplay)[1]
-  pl.table$playbyplay$homezone[pl.table$playbyplay$etype=="CHANGE"] <- "Neu"
-
-  pl.table$players <- es.table
-
+    orig.rec <- dim(pl.table$playbyplay)[1]
+    for (kk in 1:(orig.rec-1)) {
+      past <- na.omit(unlist(pl.table$playbyplay[kk,6:17-1]))
+      future <- na.omit(unlist(pl.table$playbyplay[kk+1,6:17-1]))
+      if (pl.table$playbyplay[kk,3] < pl.table$playbyplay[kk+1,3]) 
+        if (length(past) != length(future)) {
+          new.record <- pl.table$playbyplay[kk,]
+          new.record[1,4] <- "CHANGE"
+          new.record$ev.team <- ""
+          new.record[1,3] <- mean(c(pl.table$playbyplay[kk,3], pl.table$playbyplay[kk+1,3]))
+          pl.table$playbyplay <- rbind(pl.table$playbyplay, new.record)
+        } else if (any(sort(past) != sort(future))) {
+          new.record <- pl.table$playbyplay[kk,]
+          new.record[1,4] <- "CHANGE"
+          new.record$ev.team <- ""
+          new.record[1,3] <- mean(c(pl.table$playbyplay[kk,3], pl.table$playbyplay[kk+1,3]))
+          pl.table$playbyplay <- rbind(pl.table$playbyplay, new.record)
+        }
+    }
+    pl.table$playbyplay <- pl.table$playbyplay[order(pl.table$playbyplay[,3]),]
+    pl.table$playbyplay[,1] <- 1:dim(pl.table$playbyplay)[1]
+    pl.table$playbyplay$homezone[pl.table$playbyplay$etype=="CHANGE"] <- "Neu"
+    
+    pl.table$players <- es.table
+  } else {pl.table <- list(players=NULL, playbyplay=NULL, teams=NULL, date=NULL)}  
+  
   return(pl.table)
 
 }

@@ -280,9 +280,12 @@ augment.game <- function (game.info, player.list) {
   #game.info=sample.game; player.list=roster; season=""; gcode=""
 
   playbyplay <- game.info$playbyplay; teams <- game.info$teams
+  if (length(playbyplay) == 0) stop ("Play-by-play table does not exist.")
+  if (length(player.list) == 0) stop ("Player roster does not exist.")
+  
   
   #replace players with ID numbers.
-  for (cc in c(paste0("a",1:6), paste0("h",1:6), "away.G", "home.G")) {
+  for (cc in c(paste0("a",1:6), paste0("h",1:6), "away.G", "home.G", "ev.player.1", "ev.player.2", "ev.player.3")) {
     replacement <- player.list$player.id[match(playbyplay[,cc], player.list$numfirstlast)]
     if (is.null(replacement)) replacement <- rep(NA, dim(playbyplay)[1])
     playbyplay[,cc] <- replacement
@@ -483,12 +486,8 @@ construct.rosters <- function (games=full.game.database(),
     if (games$valid[kk]) {
       tryme <- try({
 
-        game.info <- NULL   #will be 
-        load (file=paste0(rdata.folder, "/", games$season[kk], "-",
-                2+1*(games$session[kk]=="Playoffs"),
-                games$gamenumber[kk], "-processed.RData"))
+        game.info <- retrieve.game(games$season[kk], games$gcode[kk], rdata.folder)
         if (length(game.info$players)>0)
-          #master.list <- rbind(master.list, game.info$players[,c(2,5,6,8)])
           master.rosters[[kk]] <- game.info$players[,c(2,5,6,8)]
           
         games$awayteam[kk] <- game.info$teams[1]
@@ -498,6 +497,8 @@ construct.rosters <- function (games=full.game.database(),
                                              game.info$playbyplay$ev.team==game.info$teams[1]))
         games$homescore[kk] <- length(which(game.info$playbyplay$etype=="GOAL" &
                                              game.info$playbyplay$ev.team==game.info$teams[2]))
+
+        if (length(game.info$playbyplay) == 0) games$valid[kk] <- FALSE
 
       }, TRUE)
       if (class(tryme) == "try-error") {games$valid[kk] <- FALSE; miscount <- miscount+1}
@@ -538,8 +539,8 @@ construct.rosters <- function (games=full.game.database(),
   
     
   #write.csv(master.list.2, "master.list.csv", quote=FALSE); write.csv(games, "games.csv", quote=FALSE)
-  return(list(master.list=master.list.2,
-              unique.list=unique.list,
+  return(list(roster.master=master.list.2,
+              roster.unique=unique.list,
               games=games,
               positions=positions))
   
@@ -610,14 +611,14 @@ nhlscrapr.everything <- function () {
   #list and an improved game table.
   roster.main <- construct.rosters (games)
 
-  roster <- roster.main$master.list
-  roster.unique <- roster.main$unique.list
+  roster.master <- roster.main$roster.master
+  roster.unique <- roster.main$roster.unique
   games <- roster.main$games
   
-  save(roster, roster.unique, games, file="nhl20022013.RData")
+  save(roster.master, roster.unique, games, file="nhl20022013.RData")
  
   #Do it all at once for a big database.
-  assemble.mega.file (roster, games, output.file="mynhlscrapes.RData")
+  assemble.mega.file (roster.master, games, output.file="mynhlscrapes.RData")
 
 }
 
