@@ -31,7 +31,7 @@ process.pl.old <- function (pl.html) {
 
   goal.players <- extract[goal.lines]
   goal.players <- goal.players[grep("^ *[A-Z\\.]{3}", goal.players)]
-  goal.players <- t(matrix(goal.players[!grepl(" *SO +", goal.players)], nrow=2))
+  goal.players <- t(matrix(goal.players[!grepl(" +SO +", goal.players)], nrow=2))
                     
   new.event <- data.frame(event=0, period=0, seconds=0, etype="", etext="",
                           a1="", a2="", a3="", a4="", a5="", a6="",
@@ -193,8 +193,15 @@ process.pl.old <- function (pl.html) {
     for (ii in 1:dim(goal.players)[1]) {
       for (jj in 1:2) {
                                         #home team?
-        home <- 1*(gsub(" +([A-Z]+).*", "\\1", goal.players[ii,jj])==teams[2])
+        home <- 1*(gsub(" +([A-Z\\.]+).*", "\\1", goal.players[ii,jj])==teams[2])
         sq <- unlist(strsplit(goal.players[ii,jj], " "))
+        #manual fix for space names like DE VRIES.
+        for (xx in length(sq):2)
+          if (grepl("[A-Z]+", sq[xx]) & grepl("[A-Z]+", sq[xx-1])) {
+            sq[xx-1] <- paste(sq[xx-1], sq[xx])
+            sq <- sq[-xx]
+          }
+        
         nums <- grep("[0-9]+", sq)
         playbyplay[goal.evs[ii],5+6*home+1:length(nums)] <- paste(sq[nums], sq[nums+1])
       }
@@ -349,7 +356,7 @@ process.pl.new <- function (pl.html) {
   #SHOT
   c1 <- which(playbyplay$etype=="SHOT")
   if (length(c1)>0) {
-    p1 <- sapply(gsub("[A-Z #-]*?([0-9]+) ([A-Z' \\.-]+), ([A-Za-z-]+),[A-Za-z,\\. ]*([0-9]+).*", "\\1;\\2;\\3;\\4", playbyplay$etext[c1]),
+    p1 <- sapply(gsub("[A-Z \\.#-]*?([0-9]+) ([A-Z' \\.-]+), ([A-Za-z-]+),[A-Za-z,\\. ]*([0-9]+).*", "\\1;\\2;\\3;\\4", playbyplay$etext[c1]),
                  function(tt) {
                    out1 <- unlist(strsplit (tt, ";"))
                    if (length(out1) != 4) {  #No shot type listed.

@@ -24,7 +24,9 @@
                        gcode="20001",
                        rdata.folder="nhlr-data")
   construct.rosters   (games=full.game.database(),
-                       rdata.folder="nhlr-data")
+                       rdata.folder="nhlr-data",
+                       roster.master=NULL,
+                       positions=NULL)
   augment.game        (game.info, player.list)
   assemble.mega.file  (player.list,
                        games=full.game.database(),
@@ -47,7 +49,11 @@
   \item{save.to.file}{Save the game object to file.}
   \item{game.info}{A list of objects pertaining to a single game, the output of process.single.game() .}
   \item{player.list}{A table with player names and unique IDs.}
-  \item{output.file}{The name of a file into which the game event list will be saved.}
+  \item{output.file}{The name of a file into which the game event list
+    will be saved.}
+  \item{roster.master}{A roster table produced by construct.rosters()}
+  \item{positions}{The positions assumed by players during each game,
+    produced by construct.rosters().}
 }
 \details{
   This group of functions takes the downloaded HTML, image and JSON

@@ -16,9 +16,9 @@ match.xy <- function (pl.table, json.object) {
                            seconds=1200*(as.numeric(xy.event.table[,3])-1)+s1,
                            etype=toupper(xy.event.table[,5]))
     
-    rows <- match(xy.frame$seconds, pl.table$game.record$seconds)
-    pl.table$game.record$xcoord[rows[!is.na(rows)]] <- xy.frame$xcoord[!is.na(rows)]
-    pl.table$game.record$ycoord[rows[!is.na(rows)]] <- xy.frame$ycoord[!is.na(rows)]
+    rows <- match(xy.frame$seconds, pl.table$playbyplay$seconds)
+    pl.table$playbyplay$xcoord[rows[!is.na(rows)]] <- xy.frame$xcoord[!is.na(rows)]
+    pl.table$playbyplay$ycoord[rows[!is.na(rows)]] <- xy.frame$ycoord[!is.na(rows)]
   }
   
   return(pl.table)

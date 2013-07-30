@@ -14,10 +14,11 @@ full.game.database <- function () {
                           #419, 483,
                           582, 598, 872),  #bad images.           
                         c(10, 251, 453, 456, 482, 802),     #0304
-                        c(18, 140,   #Visitor GIF makes segfault.
+                        c(18, 140,   #Visitor GIF makes segfault.   0506
+                          298,  #wrong ES file -- 398 instead of 298.
                           458,  #bogus ES file.
                           974),  #0506
-                        c(),     #0607
+                        c(1024),  #missing line of players for a goal.    #0607
 
                         c(), c(259, 409, 1077),     #0708 0809
                         c(81, 827, 836, 857, 863, 874), c(429),   #0910 1011
@@ -64,7 +65,7 @@ full.game.database <- function () {
 }
 
 download.single.game <- function (season="20122013", gcode="20001", rdata.folder="nhlr-data", verbose=TRUE) {
-  #season="20052006"; gcode="20018"; rdata.folder="nhlr-data"; verbose=TRUE
+  #season="20122013"; gcode="20018"; rdata.folder="nhlr-data"; verbose=TRUE
   if (!(season %in% c("20022003", "20032004", "20052006", "20062007",
                       "20072008", "20082009", "20092010", "20102011",
                       "20112012", "20122013"))) stop(paste("Invalid season: ",season))
@@ -83,9 +84,12 @@ download.single.game <- function (season="20122013", gcode="20001", rdata.folder
   if (class(game.rec$pl) == "try-error") game.rec$pl <- NULL  #error.free <- FALSE
 
   #see if x-y is there.
-  infile <- paste0("http://live.nhl.com/GameData/",season,"/",substr(season,1,4),"0",gcode,"/PlayByPlay.jsonp")
-  game.rec$xy <- try(fromJSON(sub('\\)$', '', sub('[^\\{]*', '', getURL(infile)))), TRUE)
-  if (class(game.rec$xy) == "try-error") game.rec$xy <- NULL
+  infile <- paste0("http://live.nhl.com/GameData/",season,"/",substr(season,1,4),"0",gcode,"/PlayByPlay.json")
+  file2 <- try(getURL(infile), TRUE)
+  if (class(file2) != "try-error") {
+    game.rec$xy <- try(fromJSON(file2))
+    if (class(game.rec$xy) == "try-error") game.rec$xy <- NULL
+  } else game.rec$xy <- NULL
   
   if (season %in% c("20022003", "20032004", "20052006", "20062007")) {
     
@@ -132,9 +136,14 @@ process.single.game <- function (season="20122013", gcode="20001",
                                  rdata.folder="nhlr-data",
                                  override.download=FALSE,
                                  save.to.file=TRUE) {
-  #season="20092010"; gcode="20079"; rdata.folder="nhlr-data"; override.download=FALSE; save.to.file=TRUE
-  
+  #season="20122013"; gcode="20712"; rdata.folder="nhlr-data"; override.download=FALSE; save.to.file=TRUE
+
+
   if (!file.exists(paste0(rdata.folder, "/", season, "-", gcode, ".RData")) | override.download) {
+
+    #For Matt Taddy, 7-10-13.
+    #message("process.single.game -- Current directory:",getwd()); message(season, gcode, rdata.folder)
+
     dl.time <- download.single.game(season, gcode, rdata.folder)
   }
   game.rec <- NULL   #loaded in next line.
@@ -268,13 +277,37 @@ retrieve.game <- function (season="20122013", gcode="20001",
                        rdata.folder="nhlr-data") {
   #season="20122013"; gcode="20001"; rdata.folder="nhlr-data"
   
-  if (!file.exists(paste0(rdata.folder, "/", season, "-", gcode, "-processed.RData")))
-    game.info <- process.single.game (season, gcode, rdata.folder, save.to.file=TRUE) else
-  load (paste0(rdata.folder, "/", season, "-", gcode, "-processed.RData"))
+  if (!file.exists(paste0(rdata.folder, "/", season, "-", gcode, "-processed.RData"))) {
+    #For Matt Taddy, 7-10-13.
+    #message("retrieve.game -- Current directory:",getwd()); message(season, gcode, rdata.folder)
+
+    game.info <- process.single.game (season, gcode, rdata.folder, save.to.file=TRUE)
+  } else load (paste0(rdata.folder, "/", season, "-", gcode, "-processed.RData"))
   return(game.info)
 
 }
 
+
+
+
+patch.for.shottypes <- function(grand.data) {
+
+  grand.data$home.skaters <- apply(1*(grand.data[,c(paste0("h",1:6), "home.G")] > 1), 1, sum)
+  grand.data$away.skaters <- apply(1*(grand.data[,c(paste0("a",1:6), "away.G")] > 1), 1, sum)
+
+  etypes <- c("GOAL","SHOT","MISS","BLOCK")
+  shot.rows <- which(grand.data$etype %in% etypes)
+
+  grand.data$type[shot.rows][grand.data$type[shot.rows] == "Tip-in"] <- "Tip-In"
+  grand.data$type[shot.rows][grand.data$type[shot.rows] == "Wrap-around"] <- "Wrap"  
+  shotstyles <- c("Backhand", "Tip-In", "Wrist", "Snap", "Slap", "Wrap", "Deflected")
+  grand.data$type[shot.rows][!(grand.data$type[shot.rows] %in% shotstyles)] <- "Unspecified"
+  grand.data$distance <- as.numeric(grand.data$distance)
+  rownames(grand.data) <- 1:nrow(grand.data)
+  #save(grand.data, file="grand-10plus.RData")
+
+  return(grand.data)
+}
 
 augment.game <- function (game.info, player.list) {
   #game.info=sample.game; player.list=roster; season=""; gcode=""
@@ -291,20 +324,14 @@ augment.game <- function (game.info, player.list) {
     playbyplay[,cc] <- replacement
     playbyplay[is.na(playbyplay[,cc]),cc] <- 1
   }
-  
+
+  playbyplay <- patch.for.shottypes(playbyplay)
   return(playbyplay)
 }
 
 
-
-
-
+fix.names.manually <- function (master.list) {
   
-make.unique.player.list <- function (master.list) {
-
-  #add Blanky.
-  master.list <- rbind("", master.list)
-
   #one name, two players.
   master.list$first[which(master.list$last=="PICARD" & master.list$first=="ALEXANDRE" & master.list$pos == "D")] <- "ALEXANDRE R."
   
@@ -458,11 +485,19 @@ make.unique.player.list <- function (master.list) {
   master.list$first[which(master.list$last=="YORK" & master.list$first=="MICHAEL")] <- "MIKE"
   master.list$first[which(master.list$last=="ZHERDEV" & master.list$first=="NIKOLAY")] <- "NIKOLAI"
   master.list$first[which(master.list$last=="ZOLNIERCZYK" & master.list$first=="HARRISON")] <- "HARRY"
-
-
+  
   master.list <- master.list[order(master.list[,2],
                                    master.list[,3],
-                                   master.list[,1]),] 
+                                   master.list[,1]),]
+  return(master.list)
+}
+
+  
+make.unique.player.list <- function (master.list) {
+
+  #add Blanky.
+  #master.list <- rbind("", master.list)
+  #master.list <- fix.names.manually (master.list)
 
   master.list$index <- 1:dim(master.list)[1]
   for (kk in 2:dim(master.list)[1])
@@ -470,77 +505,108 @@ make.unique.player.list <- function (master.list) {
       master.list[kk,5] <- master.list[kk-1,5]
   player.id.proto <- unique(master.list[,5])
   master.list$player.id <- match(master.list[,5], player.id.proto)
-  
   return(master.list)
 }
 
 
 
 construct.rosters <- function (games=full.game.database(),
-                               rdata.folder="nhlr-data") {
-  #games=full.game.database(); rdata.folder="nhlr-data"
+                               rdata.folder="nhlr-data",
+
+                               roster.master=NULL,
+                               positions=NULL) {
   
-  master.rosters <- list()
+  #games=full.game.database(); rdata.folder="nhlr-data"; roster.master=NULL; roster.unique=NULL; positions=NULL
+
+  message ("Begin: Loading rosters from game files.")
+  roster.collection <- list()
   miscount <- 0
   for (kk in 1:dim(games)[1])  #which(games$season=="20122013" & games$session == "Playoffs"))  #
     if (games$valid[kk]) {
       tryme <- try({
-
         game.info <- retrieve.game(games$season[kk], games$gcode[kk], rdata.folder)
         if (length(game.info$players)>0)
-          master.rosters[[kk]] <- game.info$players[,c(2,5,6,8)]
+          roster.collection[[kk]] <- fix.names.manually(game.info$players[,c(2,5,6,8)])
           
         games$awayteam[kk] <- game.info$teams[1]
         games$hometeam[kk] <- game.info$teams[2]
         games$date[kk] <- paste(game.info$date, collapse=" ")
         games$awayscore[kk] <- length(which(game.info$playbyplay$etype=="GOAL" &
-                                             game.info$playbyplay$ev.team==game.info$teams[1]))
+                                            game.info$playbyplay$ev.team==game.info$teams[1]))
         games$homescore[kk] <- length(which(game.info$playbyplay$etype=="GOAL" &
-                                             game.info$playbyplay$ev.team==game.info$teams[2]))
+                                            game.info$playbyplay$ev.team==game.info$teams[2]))
 
         if (length(game.info$playbyplay) == 0) games$valid[kk] <- FALSE
-
       }, TRUE)
       if (class(tryme) == "try-error") {games$valid[kk] <- FALSE; miscount <- miscount+1}
       if (kk %% 100 == 0) message(paste("Roster loading: game",kk,"of",dim(games)[1],"with",miscount,"skips."))
     }
+  message ("End: Loading rosters from game files.")
+
+  blanky <- data.frame (pos="", last="", first="", numfirstlast="",
+                        firstlast="", index=1,
+                        player.id=1, stringsAsFactors=FALSE)
+  if (is.null(roster.master))
+    roster.master <- blanky
   
-  master.list <- NULL
-  for (kk in 1:length(master.rosters)) if (games$valid[kk]) {
-    master.list <- rbind(master.list, master.rosters[[kk]])
-    if (kk %% 100 == 0) {
-      master.list <- unique(master.list)
-      message(paste("Roster merger: game",kk,"of",dim(games)[1]))
+  for (kk in 1:length(roster.collection)) if (games$valid[kk]) {
+    if (kk %% 500 == 0) message(paste("Roster merger: game",kk,"of",dim(games)[1]))
+    for (pp in 1:dim(roster.collection[[kk]])[1]) {
+      m1 <- match(roster.collection[[kk]]$numfirstlast[pp],
+                  roster.master$numfirstlast)
+      if (is.na(m1)) { #no exact match?
+        rec1 <- blanky
+        rec1$pos <- roster.collection[[kk]]$pos[pp];
+        rec1$first <- roster.collection[[kk]]$first[pp];
+        rec1$last <- roster.collection[[kk]]$last[pp];
+        rec1$numfirstlast <- roster.collection[[kk]]$numfirstlast[pp];
+        rec1$firstlast <- paste(rec1$first, rec1$last)
+        rec1$index <- dim(roster.master)[1] + 1
+        
+        m2 <- match(rec1$firstlast,
+                    roster.master$firstlast)
+        if (is.na(m2)) rec1$player.id <- max(roster.master$player.id)+1 else rec1$player.id <- roster.master$player.id[m2]
+
+        roster.master <- rbind(roster.master, rec1)
+      }
     }
   }
   
-  master.list <- unique(master.list)
-  master.list.2 <- make.unique.player.list(master.list)
 
   #positions table and unique player list.
   message("Finding most likely position for each player.")
-  zeroes <- rep(0, dim(master.list.2)[1])
-  positions <- data.frame(pC=zeroes, pL=zeroes, pR=zeroes, pD=zeroes, pG=zeroes)
-  for (kk in 1:length(master.rosters)) if (games$valid[kk]) {
-    r1.match <- match(master.rosters[[kk]]$numfirstlast,
-                      master.list.2$numfirstlast)
-    positions$pC[r1.match[master.rosters[[kk]]$pos=="C"]] <- positions$pC[r1.match[master.rosters[[kk]]$pos=="C"]] + 1
-    positions$pL[r1.match[master.rosters[[kk]]$pos=="L"]] <- positions$pL[r1.match[master.rosters[[kk]]$pos=="L"]] + 1
-    positions$pR[r1.match[master.rosters[[kk]]$pos=="R"]] <- positions$pR[r1.match[master.rosters[[kk]]$pos=="R"]] + 1
-    positions$pD[r1.match[master.rosters[[kk]]$pos=="D"]] <- positions$pD[r1.match[master.rosters[[kk]]$pos=="D"]] + 1
-    positions$pG[r1.match[master.rosters[[kk]]$pos=="G"]] <- positions$pG[r1.match[master.rosters[[kk]]$pos=="G"]] + 1
+    
+  if (is.null(positions)) {
+    zeroes <- rep(0, dim(roster.master)[1])
+    positions <- data.frame(pC=zeroes, pL=zeroes, pR=zeroes, pD=zeroes, pG=zeroes)
+  } else while (dim(positions)[1] < dim(roster.master)[1]) positions <- rbind(positions, 0)
+  
+  for (kk in 1:length(roster.collection)) if (games$valid[kk]) {
+    r1.match <- match(roster.collection[[kk]]$numfirstlast,
+                      roster.master$numfirstlast)
+    positions$pC[r1.match[roster.collection[[kk]]$pos=="C"]] <-
+      positions$pC[r1.match[roster.collection[[kk]]$pos=="C"]] + 1
+    positions$pL[r1.match[roster.collection[[kk]]$pos=="L"]] <-
+      positions$pL[r1.match[roster.collection[[kk]]$pos=="L"]] + 1
+    positions$pR[r1.match[roster.collection[[kk]]$pos=="R"]] <-
+      positions$pR[r1.match[roster.collection[[kk]]$pos=="R"]] + 1
+    positions$pD[r1.match[roster.collection[[kk]]$pos=="D"]] <-
+      positions$pD[r1.match[roster.collection[[kk]]$pos=="D"]] + 1
+    positions$pG[r1.match[roster.collection[[kk]]$pos=="G"]] <-
+      positions$pG[r1.match[roster.collection[[kk]]$pos=="G"]] + 1
   }
-  unique.entries <- match(1:max(master.list.2$player.id), master.list.2$player.id)
-  unique.list <- master.list.2[unique.entries,]
-  unique.list$pos <- sapply(1:max(master.list.2$player.id), function(kk) {
-    pcount <- apply(rbind(positions[master.list.2$player.id==kk,]), 2, sum)
+
+  unique.entries <- match(1:max(roster.master$player.id), roster.master$player.id)
+  roster.unique <- roster.master[unique.entries,]
+
+  roster.unique$pos <- sapply(1:max(roster.master$player.id), function(kk) {
+    pcount <- apply(rbind(positions[roster.master$player.id==kk,]), 2, sum)
     c("C","L","R","D","G")[min(which(pcount==max(pcount)))]
   })
   
-    
-  #write.csv(master.list.2, "master.list.csv", quote=FALSE); write.csv(games, "games.csv", quote=FALSE)
-  return(list(roster.master=master.list.2,
-              roster.unique=unique.list,
+  #write.csv(roster.master, "master.list.csv", quote=FALSE); write.csv(games, "games.csv", quote=FALSE)
+  return(list(roster.master=roster.master,
+              roster.unique=roster.unique,
               games=games,
               positions=positions))
   
@@ -588,13 +654,13 @@ fold.frames <- function(frame.list) {
                            finally = {})
     if (length(frame.list) %% 2 == 1) hold.list[[kk]] <- rbind(hold.list[[kk]], frame.list[[2*kk+1]])
     frame.list <- hold.list
+    rm(hold.list)
     print(length(frame.list))
     if (length(frame.list) == 1) break
   }
   
   return(frame.list[[1]])
 }
-
 
 
 
@@ -620,5 +686,11 @@ nhlscrapr.everything <- function () {
   #Do it all at once for a big database.
   assemble.mega.file (roster.master, games, output.file="mynhlscrapes.RData")
 
+  #library(nhlscrapr); load("mynhlscrapes.RData"); grand.data <- fold.frames(all.games); save(grand.data, file="grand10.RData")
+  
 }
+
+
+
+
 

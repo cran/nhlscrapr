@@ -14,10 +14,14 @@ export(full.game.database,
        construct.rosters,
        assemble.mega.file,
        
-		 fold.frames,
-
+       fold.frames,
+       
        nhlscrapr.everything,
        
        player.summary,
-       NP.score
+       NP.score,
+
+
+
+		 download.capgeek.files
 )
