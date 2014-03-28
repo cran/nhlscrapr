@@ -4,8 +4,14 @@ match.xy <- function (pl.table, json.object) {
   
   #just get the relevant stuff.
   if (is.null(json.object$data)) ob1 <- json.object$game$plays$play else ob1 <- json.object$data$game$plays$play
-   
-  xy.event.table <- t(sapply(ob1, function(pp) with(pp, c(ycoord, xcoord, period, time, type))))
+
+  xy.event.table <-
+    t(sapply(ob1, function(pp)
+             c(ifelse(!is.null(pp$ycoord), pp$ycoord, NA),
+               ifelse(!is.null(pp$xcoord), pp$xcoord, NA),
+               ifelse(!is.null(pp$period), pp$period, NA),
+               ifelse(!is.null(pp$time), pp$time, NA),
+               ifelse(!is.null(pp$type), pp$type, NA))))
 
   if (length(xy.event.table)>0) {
     s1 <- 60*as.numeric(substr(xy.event.table[,4],1,2))+as.numeric(substr(xy.event.table[,4],4,5))

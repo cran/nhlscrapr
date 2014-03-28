@@ -3,15 +3,15 @@
 \alias{download.single.game}
 \alias{download.games}
 
-\title{Create a shell database for NHL games from 2002 to 2013, then
+\title{Create a shell database for NHL games from 2002 to the present, then
   download them}
 \description{
-Creates a shell database for NHL games from 2002 to 2013, unfilled with
+Creates a shell database for NHL games from 2002 to present, unfilled with
 game information. Uses this to collect and scrape NHL data, but not
-  process them immediately.
+process them immediately.
 }
 \usage{
-  full.game.database()
+  full.game.database(extra.seasons=0)
   download.single.game (season="20122013",
                         gcode="20001",
                         rdata.folder="nhlr-data",
@@ -20,6 +20,8 @@ game information. Uses this to collect and scrape NHL data, but not
                         rdata.folder="nhlr-data")
 }
 \arguments{
+  \item{extra.seasons}{Beyond 20132014, adds data for additional seasons
+  (assuming nhlscrapr is not supported and updated before the season begins.}
   \item{season}{A character string for the two years specifying an NHL
     season.}
   \item{gcode}{The five-digit ID number for a particular NHL game.}

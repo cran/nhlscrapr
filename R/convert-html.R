@@ -607,7 +607,7 @@ process.es.new <- function(es.html) {
 
   picks.1 <- gsub(" *<td.*> *([0-9]{1,2})</td>", "n;\\1", picks)
   picks.2 <- gsub(" *<td.*>([CLRDG])</td>", "p;\\1", picks.1)
-  picks.3 <- gsub(" *<td.*>([A-Z'\\., -]{6,})</td>", "m;\\1", picks.2)
+  picks.3 <- gsub(" *<td.*>([A-Za-z'\\., -]{6,})</td>", "m;\\1", picks.2)
   picks.3 <- picks.3[substr(picks.3, 1, 1) != "<"]
 
   if (length(picks)>2) {
@@ -622,7 +622,7 @@ process.es.new <- function(es.html) {
   
   names.mat <- data.frame(number=nms[sts],
                           pos=nms[sts+1],
-                          lastfirst=nms[sts+2],
+                          lastfirst=toupper(nms[sts+2]),
                           hometeam=1*(sts>division), stringsAsFactors=FALSE)
   names.mat <- names.mat[grepl(",", names.mat$lastfirst),]
   names.mat$last <- gsub("(.*), .*", "\\1", names.mat$lastfirst)

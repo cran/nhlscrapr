@@ -12,10 +12,10 @@
   \item{frame.list}{A list of data frames.}
 }
 \details{
-  Most useful with assemble.mega.file().  
+  Most useful with compile.all.games().  
 }
 \value{
-  A single data frame with the same columns as the originals.
+  A single data frame with the same columns as the originals. 
 }
 \author{A.C. Thomas <act@acthomas.ca>}
 

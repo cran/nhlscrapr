@@ -1,4 +1,9 @@
 useDynLib("nhlscrapr")
+importFrom (RCurl, getURL)
+importFrom (rjson, fromJSON)
+importFrom (bitops, bitAnd)
+importFrom (bitops, bitShiftR)
+import (biglm)
 
 export(full.game.database,
 
@@ -7,21 +12,12 @@ export(full.game.database,
        
        process.single.game,
        process.games,
+       compile.all.games,
        
        retrieve.game,
-       augment.game,
-       
-       construct.rosters,
-       assemble.mega.file,
-       
-       fold.frames,
-       
-       nhlscrapr.everything,
        
        player.summary,
        NP.score,
 
-
-
-		 download.capgeek.files
+       download.capgeek.files
 )

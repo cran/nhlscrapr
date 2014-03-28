@@ -14,8 +14,9 @@
 \details{
   This package processes data files of the type expanded summary (ES)
   and play-by-play (PL) for all possible games between 2002 and 2013,
-  and visual shift charts (SCH and SCV) for games between 2002 and
-  2007. The purpose of this routine is to produce tables for players,
+  visual shift charts (SCH and SCV) for games between 2002 and
+  2007, and shot locations from 2008 until present. The purpose of this
+  routine is to produce tables for players,
   games and on-ice events specifically to look at the impact of a player's 
   contribution to how events unfold. The examples below illustrate how 
   these tools can be used to produce these tables. 
@@ -33,6 +34,9 @@
   all games into one single R object, saving this object to disk along with the game table 
   and unique player roster.
 
+  A user only need run one command, compile.all.games(), in order to get
+  everything from the site, though this may take hours to download and compile.
+
 }
 \author{
 A.C. Thomas <act@acthomas.ca>
@@ -47,7 +51,7 @@ A.C. Thomas <act@acthomas.ca>
   #What are all games that can/should be downloaded?
   #valid=FALSE implies previously screened problems.
   #Just a subset for testing.
-  game.table <- full.game.database()[201:203,]
+  game.table <- full.game.database()[301:303,]
 
   #Get the details for these 20 games.
   print(game.table)
@@ -56,24 +60,14 @@ A.C. Thomas <act@acthomas.ca>
   process.games (game.table)
 
   #Give me a single game record.
-  sample.game <- retrieve.game (season="20022003", gcode="20201")
-
-  #Take all the game table roster lists and produce both a unique player
-  #list and an improved game table.
-  roster.main <- construct.rosters (game.table)
-
-  #Replace names with unique ID numbers.
-  sample.plus <- augment.game (sample.game, roster.main$roster.master)
+  sample.game <- retrieve.game (season="20022003", gcode="20301")
 
   #Augment all games and put them all in one big database.
-  assemble.mega.file (roster.main$roster.master, game.table, output.file="mynhlscrapes.RData")
+  compile.all.games (output.file="mynhlscrapes.RData")
 
 
   #################################################################
   # Extras:
-
-  # This runs the whole thing.
-  nhlscrapr.everything()
 
 
   #Process games in parallel!

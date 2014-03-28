@@ -4,6 +4,7 @@
 pick.out.features <- function(times,  # in seconds
                               imagefile) {  #with color codes.
   #imagefile = im1$image; times <- c(0, 365, 1200, 1345)
+  #imagefile = game.rec$imh; times <- seq(59, 3599, by=60)
   #times=pl.table$game.record$seconds; imagefile=away.gif$image
   
   #1. get period end times.

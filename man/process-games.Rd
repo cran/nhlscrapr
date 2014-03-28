@@ -2,11 +2,7 @@
 \alias{process.games}
 \alias{process.single.game}
 \alias{retrieve.game}
-\alias{construct.rosters}
-\alias{augment.game}
-\alias{assemble.mega.file}
-\alias{nhlscrapr.everything}
-
+\alias{compile.all.games}
 \title{Given downloaded NHL games, produce event tables with players on ice.}
 \description{
   Produces game tables from the NHL source files.
@@ -22,17 +18,13 @@
                        override.download=FALSE)
   retrieve.game       (season="20122013",
                        gcode="20001",
-                       rdata.folder="nhlr-data")
-  construct.rosters   (games=full.game.database(),
                        rdata.folder="nhlr-data",
-                       roster.master=NULL,
-                       positions=NULL)
-  augment.game        (game.info, player.list)
-  assemble.mega.file  (player.list,
-                       games=full.game.database(),
+                       force=TRUE)
+  compile.all.games   (mega.file="nhlscrapr-probs.RData",
+                       output.file=mega.file,
                        rdata.folder="nhlr-data",
-                       output.file="nhlscrapr-record.RData")
-  nhlscrapr.everything ()
+                       new.game.table=NULL) 
+
 
 }
 \arguments{
@@ -42,18 +34,16 @@
   \item{rdata.folder}{The location within the current directory to
   which to save the downloaded files. Will be created if it does not
   exist.}
-  \item{games}{A game database, such as the one produced by
+  \item{games, new.game.table}{A game database, such as the one produced by
     full.game.database().}
   \item{override.download}{Re-download the game files whether or not
     they are currently locally available.}
   \item{save.to.file}{Save the game object to file.}
-  \item{game.info}{A list of objects pertaining to a single game, the output of process.single.game() .}
-  \item{player.list}{A table with player names and unique IDs.}
+  \item{force}{If TRUE, reprocesses the single game file.}
   \item{output.file}{The name of a file into which the game event list
     will be saved.}
-  \item{roster.master}{A roster table produced by construct.rosters()}
-  \item{positions}{The positions assumed by players during each game,
-    produced by construct.rosters().}
+  \item{mega.file}{Input file for storing all information.}
+  
 }
 \details{
   This group of functions takes the downloaded HTML, image and JSON
@@ -92,20 +82,3 @@
   nhlscrapr.everything() does everything that's needed to construct the entire record, in case the user doesn't want to do much.
 }
 \author{A.C. Thomas <act@acthomas.ca>}
-\examples{
-
-  #Select a part of the history.
-  game.table <- full.game.database()[201:203,]
-
-  #Process one game.
-  g1 <- process.single.game (game.table$season[1], game.table$gcode[1])
-
-  #Process all games.
-  process.games (game.table)
-
-  roster.block <- construct.rosters (game.table)
-
-  g1.aug <- augment.game (g1, roster.block$roster.master)
-
-}
-
