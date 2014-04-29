@@ -1,12 +1,12 @@
-c8d751286755044f52fdcacfe22d97d2 *DESCRIPTION
+19de000a5742b001c8b54ef745b304b3 *DESCRIPTION
 ab73ac1c16e6749f426f8d0040fc64f6 *NAMESPACE
 2cb5714e2c13081e2ee3259d7e1e63ef *R/GIF.R
 659f5eca1947caf1e8e27027796f423c *R/capgeek.R
 2f0f0c75f06166acdf6d2365065b4735 *R/convert-gif.R
-fe1a4648c4ca939039351a13bbd0fe10 *R/convert-html.R
+9170963466aef6ffeb4f6ca193aca062 *R/convert-html.R
 c6c4d6db7e61153529e99796f466bc0d *R/convert-json.R
-0ab951472586dff2a616ac9f724a1f36 *R/integrate.R
-791f9f9961c768b9fb0323d9855dee22 *R/manual-name-fixes.R
+1bdda6dd796c1b873a01c059fcf20d8c *R/integrate.R
+0905b85e5b95439e0e9b82862be5e2bb *R/manual-name-fixes.R
 0996bec9a8fdc4fd932407aa70825027 *R/operations.R
 d86156e1f95521ea23a3e6df56126b7e *TODO
 a2fcf0aa0922cbce04279f936fa2476e *man/capgeek.Rd

@@ -1,8 +1,11 @@
 
+
+#display.html <- function(season, gcode, folder="nhlr-data") {load(paste0(folder,"/",season,"-",gcode,".RData")); write.table(game.rec$es, "es1.html", row.names=FALSE, col.names=FALSE, quote=FALSE); write.table(game.rec$pl, "pl1.html", row.names=FALSE, col.names=FALSE, quote=FALSE); system(paste("google-chrome es1.html"), wait=FALSE); system(paste("google-chrome pl1.html"), wait=FALSE)}
+
 # Combine all the data frames into one big collection.
 
 fold.frames <- function(frame.list) {
-  #frame.list = all.games
+  #frame.list = new.pbp.2
 
   repeat {
     hold.list <- list()
@@ -12,7 +15,9 @@ fold.frames <- function(frame.list) {
                            warning = function(war) message(paste(kk, war)),
                            error = function(err) message(paste(kk, err)),
                            finally = {})
-    if (length(frame.list) %% 2 == 1) hold.list[[kk]] <- rbind(hold.list[[kk]], frame.list[[2*kk+1]])
+    if (length(frame.list) %% 2 == 1)
+      hold.list[[length(hold.list)]] <- rbind(hold.list[[length(hold.list)]],
+                                              frame.list[[2*kk+1]])
     frame.list <- hold.list
     rm(hold.list)
     print(length(frame.list))
@@ -72,6 +77,8 @@ full.game.database <- function (extra.seasons=0) {
                       
                       awayteam="", hometeam="", awayscore="", homescore="",
                       date="",
+
+                      game.start="", game.end="", periods=0,
                       
                       stringsAsFactors=FALSE)
 
@@ -239,7 +246,7 @@ process.single.game <- function (season="20122013", gcode="20001",
     
     if (length(game.info$playbyplay) > 0) {
 
-      game.info$status <- 2 + 1*(length(grep("; [Ee]nd", game.rec$es))>0 |
+      game.info$status <- 2 + 1*(length(grep("; ([Ee]nd|[Ff]in)", game.rec$es))>0 |
                                  length(grep("Final", game.rec$es))>0 |
                                  length(grep("End of Period 4", game.rec$es))>0)
       
@@ -285,8 +292,12 @@ process.single.game <- function (season="20122013", gcode="20001",
         playbyplay$away.score[(away.goals[gg]+1):dim(playbyplay)[1]] <-
           playbyplay$away.score[(away.goals[gg]+1):dim(playbyplay)[1]] + 1
 
-      game.info$score <- c(homescore=length(home.goals),
-                           awayscore=length(away.goals))
+      game.info$score <- c(homescore=sum(playbyplay$period[home.goals] <= 4),
+                           awayscore=sum(playbyplay$period[away.goals] <= 4))
+      if (game.info$score[1] == game.info$score[2]) {
+          game.info$score[1] <- game.info$score[1] + 1*(length(home.goals)>length(away.goals))
+          game.info$score[2] <- game.info$score[2] + 1*(length(home.goals)<length(away.goals))
+      }
 
       
       #event length.
@@ -364,7 +375,7 @@ process.games <- function (games=full.game.database(),
       save.to.file=TRUE)
 
     if (item$status == 1) bogus.count <- bogus.count+1 else bogus.count <- 0
-    if (bogus.count >= 10) break
+    if (bogus.count >= 50) break
     
   }
 
@@ -433,16 +444,16 @@ construct.rosters.from.list <- function (roster.collection,  #raw list
   for (kk in 1:length(roster.collection)) if (!is.null(roster.collection[[kk]])) if (nrow(roster.collection[[kk]])>0) { # ) {    #
     
     if (kk %% 500 == 0) message(paste("Roster merger: game",kk,"of",length(roster.collection)))
-    this.roster <- fix.names.manually(roster.collection[[kk]][,c(2,5,6,8)])
+    this.roster <- fix.names.manually(roster.collection[[kk]][,c("number","pos","last","first","numfirstlast")])
 
-    match1 <- match(roster.collection[[kk]]$numfirstlast,
+    match1 <- match(this.roster$numfirstlast,
                     roster.master$numfirstlast)
     if (any(is.na(match1))) {
       rows <- which(is.na(match1))
-      newrecs <- data.frame (pos=roster.collection[[kk]]$pos[rows],
-                             last=roster.collection[[kk]]$last[rows],
-                             first=roster.collection[[kk]]$first[rows],
-                             numfirstlast=roster.collection[[kk]]$numfirstlast[rows],
+      newrecs <- data.frame (pos=this.roster$pos[rows],
+                             last=this.roster$last[rows],
+                             first=this.roster$first[rows],
+                             numfirstlast=this.roster$numfirstlast[rows],
                              firstlast="",  index=nrow(roster.master) + 1:length(rows),
                              player.id=NA,
                              pC=0, pL=0, pR=0, pD=0, pG=0,
@@ -460,18 +471,18 @@ construct.rosters.from.list <- function (roster.collection,  #raw list
       #positions <- rbind(positions, data.frame(pC=zeroes, pL=zeroes, pR=zeroes, pD=zeroes, pG=zeroes))
     }
     
-    r1.match <- match(roster.collection[[kk]]$numfirstlast,
+    r1.match <- match(this.roster$numfirstlast,
                       roster.master$numfirstlast)
-    roster.master$pC[r1.match[roster.collection[[kk]]$pos=="C"]] <-
-      roster.master$pC[r1.match[roster.collection[[kk]]$pos=="C"]] + 1
-    roster.master$pL[r1.match[roster.collection[[kk]]$pos=="L"]] <-
-      roster.master$pL[r1.match[roster.collection[[kk]]$pos=="L"]] + 1
-    roster.master$pR[r1.match[roster.collection[[kk]]$pos=="R"]] <-
-      roster.master$pR[r1.match[roster.collection[[kk]]$pos=="R"]] + 1
-    roster.master$pD[r1.match[roster.collection[[kk]]$pos=="D"]] <-
-      roster.master$pD[r1.match[roster.collection[[kk]]$pos=="D"]] + 1
-    roster.master$pG[r1.match[roster.collection[[kk]]$pos=="G"]] <-
-      roster.master$pG[r1.match[roster.collection[[kk]]$pos=="G"]] + 1
+    roster.master$pC[r1.match[this.roster$pos=="C"]] <-
+      roster.master$pC[r1.match[this.roster$pos=="C"]] + 1
+    roster.master$pL[r1.match[this.roster$pos=="L"]] <-
+      roster.master$pL[r1.match[this.roster$pos=="L"]] + 1
+    roster.master$pR[r1.match[this.roster$pos=="R"]] <-
+      roster.master$pR[r1.match[this.roster$pos=="R"]] + 1
+    roster.master$pD[r1.match[this.roster$pos=="D"]] <-
+      roster.master$pD[r1.match[this.roster$pos=="D"]] + 1
+    roster.master$pG[r1.match[this.roster$pos=="G"]] <-
+      roster.master$pG[r1.match[this.roster$pos=="G"]] + 1
       
   }
   
@@ -501,6 +512,7 @@ compile.all.games <- function (mega.file="nhlscrapr-probs.RData",
   #library(nhlscrapr); mega.file="nhls0.RData"; output.file=mega.file; rdata.folder="nhlr-data"; new.game.table=NULL
   
   if (file.exists(mega.file)) {
+    message ("Loading mega.file")
     load(mega.file)
   } else {
     games <- full.game.database() #games <- subset(new.game.table, season %in% c("20022003", "20032004", "20052006"));   games <- games[13841:13962,]
@@ -570,46 +582,53 @@ compile.all.games <- function (mega.file="nhlscrapr-probs.RData",
       sub.games$homescore[kk] <- game.info$score[1]
       
       sub.games$date[kk] <- paste(game.info$date, collapse=" ")
+
+      sub.games$game.start[kk] <- game.info$game.times[1]
+      sub.games$game.end[kk] <- game.info$game.times[2]
+      sub.games$periods[kk] <- max(game.info$playbyplay$period)
       
       new.pbp[[kk]] <- game.info
       new.roster[[kk]] <- game.info$players
       
     }, TRUE)
     if (class(tryme) == "try-error") cons.failures <- cons.failures + 1 else cons.failures <- 0
-    if (cons.failures >= 10) {
-      message ("10 consecutive failed attempts; stopping file retrieval.")
+    if (cons.failures >= 50) {
+      message ("50 consecutive failed attempts; stopping file retrieval.")
       break
     }
   }
 
+  if (length(new.roster) > 0) {
+
   #update rosters.
-  message("Updating rosters on each game file.")
-  roster.master <- construct.rosters.from.list (new.roster, roster.master)
-  new.pbp.2 <- lapply(new.pbp, function (game.info) {
-    out <- try(augment.game(game.info, roster.master), TRUE)
-    if (class(out) == "try-error") out <- NULL
-    return(out)
-  })
+    message("Updating rosters on each game file.")
+    roster.master <- construct.rosters.from.list (new.roster, roster.master)
+    new.pbp.2 <- lapply(new.pbp, function (game.info) {
+      out <- try(augment.game(game.info, roster.master), TRUE)
+      if (class(out) == "try-error") out <- NULL
+      return(out)
+    })
 
   #new ones: fold together.   source("nhlscrapr/R/operations.R")
-  secondary.data <- fold.frames(new.pbp.2)
+    secondary.data <- fold.frames(new.pbp.2)
 
-  sd1 <- create.adjusted.distance(secondary.data, distance.adjust)
-  secondary.data <- sd1$grand.data
-  distance.adjust <- sd1$distance.adjust
-  rm(sd1)
-
-  if (is.null(scoring.models)) {
-    sd1 <- make.shot.probs.simple (secondary.data)
+    sd1 <- create.adjusted.distance(secondary.data, distance.adjust)
     secondary.data <- sd1$grand.data
-    scoring.models <- sd1$scoring.models
-    shot.tables <- sd1$shot.tables
+    distance.adjust <- sd1$distance.adjust
     rm(sd1)
-  } else {
-    secondary.data <-
-      fit.shot.probs.simple (secondary.data, scoring.models, shot.tables)
-  }
 
+    if (is.null(scoring.models)) {
+      sd1 <- make.shot.probs.simple (secondary.data)
+      secondary.data <- sd1$grand.data
+      scoring.models <- sd1$scoring.models
+      shot.tables <- sd1$shot.tables
+      rm(sd1)
+    } else {
+      secondary.data <-
+        fit.shot.probs.simple (secondary.data, scoring.models, shot.tables)
+    }
+  } else secondary.data <- NULL
+    
   grand.data <- rbind(grand.data, secondary.data)
   
   games[replace.rows,] <- sub.games

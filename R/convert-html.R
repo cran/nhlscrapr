@@ -1,6 +1,28 @@
 
 # Functions for processing HTML files raw.
 
+get.game.start.end <- function(es.html) {
+
+  timevector <- ""
+  g1 <- grep("[0-9]{1,2}:[0-9]{1,2}.*[0-9]{1,2}:[0-9]{1,2}", es.html)
+  if (length(g1) > 0) timevector <- es.html[g1[1]] else if (length(es.html)>1) {
+    game2 <- paste0(es.html[-length(es.html)], es.html[-1])
+    g1 <- grep("[0-9]{1,2}:[0-9]{1,2}.*[0-9]{1,2}:[0-9]{1,2}", game2)
+    if (length(g1) > 0) timevector <- game2[g1[1]]
+  }
+  timevector <- gsub("&nbsp;", " ", timevector)
+
+  start.time <- gsub(".*([Ss]tart|[Ss]tart Time|[Dd]ebut|D\u0082but) *([0-9]{1,2}:[0-9]{2} *[APM]{0,2} *[A-Z]{0,3}).*", "\\2", timevector)
+  start.time[start.time==timevector] <- ""
+
+  end.time <- gsub(".*(End|End Time|Fin) *([0-9]{1,2}:[0-9]{2} *[APM]{0,2} *[A-Z]{0,3}).*", "\\2", timevector)
+  end.time[end.time==timevector] <- ""
+
+  return(c(start.time, end.time))
+  
+}
+
+
 process.pl.old <- function (pl.html) {
 
   date <- unlist(strsplit (gsub(" *([A-Za-z]+), ([A-Za-z]+) ([0-9]+), ([0-9]+).*",
@@ -59,7 +81,7 @@ process.pl.old <- function (pl.html) {
                           "FAC",   "FACE-OFF         ",  "GIVE",  "GIVEAWAY         ",
                           "TAKE",  "TAKEAWAY         ",  "PENL",  "PENALTY          ",
                           "HIT",   "HIT              ",  "STOP",  "STOPPAGE         ",
-                          "",      "GOALIE           ",  "HIT",   "HIT (!)          ",
+                          "PULL",  "GOALIE           ",  "HIT",   "HIT (!)          ",
                           "HIT",   "HIT (*)          ",  "SHOT",  "SHOT (!)         ",
                           "SHOT",  "SHOT (*)         "), nrow=2)
   playbyplay$etype <- event.types[1, match(playbyplay$etype, event.types[2,])]
@@ -645,6 +667,7 @@ process.es.new <- function(es.html) {
 
 
 integrate.new.pieces <- function (es.html, pl.html) {
+  #load("nhlr-data/20072008-20001.RData")
   #es.html=game.rec$es; pl.html=game.rec$pl
   
   es.table <- try(process.es.new(es.html), TRUE)
@@ -652,12 +675,15 @@ integrate.new.pieces <- function (es.html, pl.html) {
   pl.table <- try(process.pl.new(pl.html), TRUE)
   if (class(pl.table)=="try-error") pl.table <- NULL
 
+  game.times <- get.game.start.end(es.html)
+
   # replace with full names.
   for (ii in which(colnames(pl.table$playbyplay) %in% c("ev.player.1", "ev.player.2", "ev.player.3")))
     pl.table$playbyplay[,ii] <- es.table$numfirstlast[match(pl.table$playbyplay[,ii],
                                                              es.table$numlast)]
     
   pl.table$players <- es.table
+  pl.table$game.times <- game.times
   return(pl.table)
   
 }
@@ -666,11 +692,14 @@ integrate.old.pieces <- function (home.image, away.image,
                                   es.html, pl.html, game) {
   #home.image=game.rec$imh; away.image=game.rec$imv; es.html=game.rec$es; pl.html=game.rec$pl
 
+    
   es.table <- try(process.es.new(es.html), TRUE)
   if (class(es.table)=="try-error") es.table <- NULL
   pl.table <- try(process.pl.old(pl.html), TRUE)
   if (class(pl.table)=="try-error") pl.table <- NULL
 
+  game.times <- get.game.start.end(es.html)
+  
   if (length(pl.table) > 0) {
     if (substr(game,1,1)=="2") pl.table$playbyplay <- pl.table$playbyplay[pl.table$playbyplay$seconds <= 3900,]
   
@@ -729,7 +758,8 @@ integrate.old.pieces <- function (home.image, away.image,
     pl.table$playbyplay$homezone[pl.table$playbyplay$etype=="CHANGE"] <- "Neu"
     
     pl.table$players <- es.table
-  } else {pl.table <- list(players=NULL, playbyplay=NULL, teams=NULL, date=NULL)}  
+    pl.table$game.times <- game.times
+  } else {pl.table <- list(players=NULL, playbyplay=NULL, teams=NULL, date=NULL, game.times=game.times)}  
   
   return(pl.table)
 

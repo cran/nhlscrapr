@@ -1,6 +1,7 @@
 
 fix.names.manually <- function (master.list) {
-  
+  #  master.list=roster.collection[[kk]][,c("number","pos","last","first","numfirstlast")]
+    
   #one name, two players.
   master.list$first[which(master.list$last=="PICARD" & master.list$first=="ALEXANDRE" & master.list$pos == "D")] <- "ALEXANDRE R."
   
@@ -9,7 +10,7 @@ fix.names.manually <- function (master.list) {
   master.list$first[which(master.list$last=="ANTROPOV" & master.list$first=="NIKOLAI")] <- "NIK"
   master.list$first[which(master.list$last=="AULD" & master.list$first=="ALEXANDER")] <- "ALEX"
   master.list$first[which(master.list$last=="AXELSSON" & master.list$first=="PER JOHAN")] <- "P.J."
-  master.list$first[which(master.list$first=="P. J. ")] <- "P.J."
+  master.list$first[grep("P\\. *J\\. *",master.list$first)] <- "P.J."
   master.list$first[which(master.list$last=="BAILEY" & master.list$first=="JOSHUA")] <- "JOSH"
   master.list$first[which(master.list$last=="BARCH" & master.list$first=="KRYSTOFER")] <- "KRYS"
   master.list$first[which(master.list$last=="BARKER" & master.list$first=="CAMERON")] <- "CAM"
@@ -37,6 +38,8 @@ fix.names.manually <- function (master.list) {
   master.list$first[which(master.list$last=="DOWELL" & master.list$first=="JACOB")] <- "JAKE"
   master.list$first[which(master.list$last=="DRAZENOVIC" & master.list$first=="NICHOLAS")] <- "NICK"
 
+  master.list$first[which(master.list$last=="DUMBA" & master.list$first=="MATHEW")] <- "MATT"
+  
   master.list$first[which(master.list$last=="DUMONT" & master.list$first=="J P")] <- "JEAN-PIERRE"
   master.list$first[which(master.list$last=="DUMONT" & master.list$first=="J-P")] <- "JEAN-PIERRE"
   master.list$first[which(master.list$last=="EARL" & master.list$first=="ROBBIE")] <- "ROBERT"
@@ -51,10 +54,12 @@ fix.names.manually <- function (master.list) {
   master.list$first[which(master.list$last=="GROSSMAN" & master.list$first=="NIKLAS")] <- "NICKLAS"
   master.list$last[which(master.list$last=="GROSSMAN" & master.list$first=="NICKLAS")] <- "GROSSMANN"
   master.list$first[which(master.list$last=="GUENIN" & master.list$first=="NATE")] <- "NATHAN"
-  master.list$first[which(master.list$last=="HALKO" & master.list$first=="STEVE")] <- "STEVENN"
+  master.list$first[which(master.list$last=="HALKO" & master.list$first=="STEVE")] <- "STEVEN"
   master.list$first[which(master.list$last=="HIGGINS" & master.list$first=="CHRISTOPHER")] <- "CHRIS"
 
   master.list$first[which(master.list$last=="HAVLAT" & master.list$first=="MARTY")] <- "MARTIN"
+
+  master.list$first[which(master.list$last=="HERR" & master.list$first=="MATTHEW")] <- "MATT"
 
   
   master.list$last[which(master.list$last=="HILLEN III" & master.list$first=="JOHN")] <- "HILLEN"
@@ -80,7 +85,7 @@ fix.names.manually <- function (master.list) {
   master.list$first[which(master.list$last=="KOMISAREK" & master.list$first=="MICHAEL")] <- "MIKE"
   master.list$first[which(master.list$last=="KONDRATIEV" & master.list$first=="MAX")] <- "MAXIM"
   master.list$first[which(master.list$last=="KOVALEV" & master.list$first=="ALEXEI")] <- "ALEX"
-  master.list$first[which(master.list$last=="KRONVALL")] <- "KRONWALL"
+  master.list$last[which(master.list$last=="KRONVALL")] <- "KRONWALL"
   master.list$first[which(master.list$last=="LEGACE" & master.list$first=="EMMANUEL")] <- "MANNY"
   master.list$first[which(master.list$last=="LETANG" & master.list$first=="KRISTOPHER")] <- "KRIS"
 
@@ -101,6 +106,8 @@ fix.names.manually <- function (master.list) {
   master.list$first[which(master.list$last=="MODIN" & master.list$first=="FREDDY")] <- "FREDRIK"
   master.list$first[which(master.list$last=="NEIL" & master.list$first=="CHRISTOPHER")] <- "CHRIS"
 
+  master.list$first[which(master.list$last=="NIETO" & master.list$first=="MATTHEW")] <- "MATT"
+
   master.list$first[which(master.list$last=="ODUYA" & master.list$first=="DAVID JOHNNY")] <- "JOHNNY"
   master.list$first[which(master.list$last=="ODUYA" & master.list$first=="JOHN")] <- "JOHNNY"
   master.list$last[which(master.list$last=="ORTMYER" & master.list$first=="JED")] <- "ORTMEYER"
@@ -117,6 +124,10 @@ fix.names.manually <- function (master.list) {
   master.list$first[which(master.list$last=="PURCELL" & master.list$first=="EDWARD")] <- "TEDDY"
 
   master.list$last[which(master.list$last=="PUSHKAREV" & master.list$first=="KONSTANTIN")] <- "PUSHKARYOV"
+
+  master.list$first[which(master.list$last=="REINHART" & master.list$first=="MAXWELL")] <- "MAX"
+  
+  
   master.list$first[which(master.list$last=="REINPRECHT" & master.list$first=="STEVE")] <- "STEVEN"
   master.list$first[which(master.list$last=="RISSMILLER" & master.list$first=="PAT")] <- "PATRICK"
   master.list$first[which(master.list$last=="RUPP" & master.list$first=="MICHAEL")] <- "MIKE"
@@ -158,8 +169,10 @@ fix.names.manually <- function (master.list) {
   master.list$first[which(master.list$last=="ZHERDEV" & master.list$first=="NIKOLAY")] <- "NIKOLAI"
   master.list$first[which(master.list$last=="ZOLNIERCZYK" & master.list$first=="HARRISON")] <- "HARRY"
   
-  master.list <- master.list[order(master.list[,2],
-                                   master.list[,3],
-                                   master.list[,1]),]
+  master.list <- master.list[order(master.list$last,
+                                   master.list$first),]
+  #master.list$numfirstlast <- with(master.list, paste(num, first, last))
+  
+  
   return(master.list)
 }
