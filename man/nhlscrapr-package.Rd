@@ -75,7 +75,7 @@ A.C. Thomas <act@acthomas.ca>
   registerDoMC(4)
 
   res <- foreach (kk=1:dim(game.table)[1]) \%dopar\%
-    if (game.table$valid[kk]) \{
+    \{
       message (paste(kk, game.table[kk,1], game.table$gcode[kk]))
       item <- process.single.game(
                 game.table[kk,1],

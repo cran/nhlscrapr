@@ -73,12 +73,8 @@
   retrieve.game() retrieves the processed file from disk if it exists, and
   if not, it runs process.single.game() first.
 
-  construct.rosters() takes the roster table from each game and assembles a unique player identifier list, as well as fills in the information for each game in the game table.
-
-  augment.game() replaces the names in the event record with unique identifier numbers.
-
-  assemble.mega.file() takes all games in the record, performs augment.game() and saves the result.
-
-  nhlscrapr.everything() does everything that's needed to construct the entire record, in case the user doesn't want to do much.
+  compile.all.games() does everything that's needed to construct the
+	entire record. This will be fastest if all games have already been
+	downloaded and processed, possibly in parallel.
 }
 \author{A.C. Thomas <act@acthomas.ca>}

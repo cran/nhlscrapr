@@ -623,13 +623,16 @@ process.pl.new <- function (pl.html) {
 
 process.es.new <- function(es.html) {
 
+  es.html <- gsub ("\uC9","E",es.html)
+  es.html <- gsub ("\uCA","E",es.html)
+  es.html <- gsub ("\uC8","E",es.html)
   rel.rows.1 <- grep("<tr", es.html)
   rel.rows.2 <- sort(c(outer(rel.rows.1, 1:3, "+")))
   picks <- es.html[rel.rows.2[grep(" *<td [awc ].*", es.html[rel.rows.2])]]
 
   picks.1 <- gsub(" *<td.*> *([0-9]{1,2})</td>", "n;\\1", picks)
   picks.2 <- gsub(" *<td.*>([CLRDG])</td>", "p;\\1", picks.1)
-  picks.3 <- gsub(" *<td.*>([A-Za-z'\\., -]{6,})</td>", "m;\\1", picks.2)
+  picks.3 <- gsub(" *<td.*>([A-Za-z'\\.\\(\\), -]{6,})</td>", "m;\\1", picks.2)
   picks.3 <- picks.3[substr(picks.3, 1, 1) != "<"]
 
   if (length(picks)>2) {

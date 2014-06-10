@@ -162,6 +162,9 @@ fix.names.manually <- function (master.list) {
   master.list$first[which(master.list$last=="VARLAMOV" & master.list$first=="SIMEON")] <- "SEMYON"
   master.list$last[which(master.list$last=="VANDE VELDE" & master.list$first=="CHRIS")] <- "VANDEVELDE"
 
+  master.list$first[which(master.list$last=="WHITE" & master.list$first=="COLIN (JOHN)")] <- "COLIN"
+  
+  
   master.list$first[which(master.list$last=="WOZNIEWSKI" & master.list$first=="ANDREW")] <- "ANDY"
   master.list$first[which(master.list$last=="WYMAN" & master.list$first=="JT")] <- "JAMES"
 

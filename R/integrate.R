@@ -20,7 +20,7 @@ fold.frames <- function(frame.list) {
                                               frame.list[[2*kk+1]])
     frame.list <- hold.list
     rm(hold.list)
-    print(length(frame.list))
+    message ("Folding data frames. Total: ",length(frame.list))
     if (length(frame.list) == 1) break
   }
   
@@ -628,10 +628,26 @@ compile.all.games <- function (mega.file="nhlscrapr-probs.RData",
         fit.shot.probs.simple (secondary.data, scoring.models, shot.tables)
     }
   } else secondary.data <- NULL
-    
+
   grand.data <- rbind(grand.data, secondary.data)
-  
   games[replace.rows,] <- sub.games
+
+  message ("Adding event location sections.")
+  save (grand.data, roster.master, games,   #roster.unique, 
+        distance.adjust, scoring.models, shot.tables,
+        file="mytemp.RData")
+
+  coords <- grand.data[,c("xcoord","ycoord")]
+  flip <- which(coords[,1] < 0)
+  coords[flip,1] <- -coords[flip,1]; coords[flip,2] <- -coords[flip,2]; 
+  grand.data$loc.section <- pick.section (coords)
+
+  grand.data$new.loc.section <- grand.data$loc.section
+  grand.data$newxc <- grand.data$xcoord
+  grand.data$newyc <- grand.data$ycoord
+
+  ## Here would go the adjusted location/imputed position part.
+
   
   message("Saving to ",output.file)
   save(grand.data, roster.master, games,   #roster.unique, 

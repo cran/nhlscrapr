@@ -84,6 +84,35 @@ create.adjusted.distance <- function (sub.data, distance.adjust=NULL) {   #, spl
 
 
 
+#######################################################################
+## Bin into quadrilaterals.
+
+
+in.triangle <- function (xyp, tr) {
+  area <- (-tr[5]*tr[3] + tr[4]*(tr[3]-tr[2]) + tr[1]*(-tr[6]+tr[5]) + tr[2]*tr[6])/2
+  ss <- 1/2/area * (tr[4]*tr[3] - tr[1]*tr[6] + (tr[6]-tr[4])*xyp[,1] + (tr[1]-tr[3])*xyp[,2])
+  tt <- 1/2/area * (tr[1]*tr[5] - tr[4]*tr[2] + (tr[4]-tr[5])*xyp[,1] + (tr[2]-tr[1])*xyp[,2])
+  output <- (ss > 0 & tt > 0 & 1 > ss+tt)
+  return(output)
+}
+in.tri.rev <- function (tr=matrix(c(0,0.5,1, 0,1,0), nrow=3), xy.points) in.triangle (xy.points, tr)
+
+pick.section <- function (xy.points) {
+ 
+  in.1 <- apply(quadsarray[1:3,,], 3, in.tri.rev, xy.points)
+  in.2 <- apply(quadsarray[c(1,3,4),,], 3, in.tri.rev, xy.points)
+  picks <- in.1 | in.2
+  picks[is.na(picks)] <- FALSE
+  
+  picker <- function (row) if (sum(row)>0) min(which(row)) else 0
+  sections <- apply (picks, 1, picker)
+  return(sections)
+}
+
+
+#######################################################################
+
+
 
 
 
