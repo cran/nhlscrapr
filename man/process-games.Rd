@@ -12,19 +12,24 @@
                        gcode="20001",
                        rdata.folder="nhlr-data",
                        override.download=FALSE,
-                       save.to.file=TRUE)
+                       save.to.file=TRUE,
+                       ...)
   process.games       (games=full.game.database(),
                        rdata.folder="nhlr-data",
                        override.download=FALSE)
   retrieve.game       (season="20122013",
                        gcode="20001",
                        rdata.folder="nhlr-data",
-                       force=TRUE)
-  compile.all.games   (mega.file="nhlscrapr-probs.RData",
-                       output.file=mega.file,
-                       rdata.folder="nhlr-data",
-                       new.game.table=NULL) 
-
+                       force=TRUE,
+                       ...)
+  compile.all.games   (rdata.folder="nhlr-data",
+                       output.folder="source-data",
+                       new.game.table=NULL,
+                       seasons=NULL,
+                       verbose=FALSE,
+                       override.days.back=NULL,
+                       date.check=FALSE,
+                       ...)
 
 }
 \arguments{
@@ -34,15 +39,22 @@
   \item{rdata.folder}{The location within the current directory to
   which to save the downloaded files. Will be created if it does not
   exist.}
+  \item{output.folder}{The location within the current directory where
+    compiled files will be saved. Will be created if it does not
+  exist.}
   \item{games, new.game.table}{A game database, such as the one produced by
     full.game.database().}
   \item{override.download}{Re-download the game files whether or not
     they are currently locally available.}
   \item{save.to.file}{Save the game object to file.}
   \item{force}{If TRUE, reprocesses the single game file.}
-  \item{output.file}{The name of a file into which the game event list
-    will be saved.}
-  \item{mega.file}{Input file for storing all information.}
+  \item{seasons}{If selected, defaults to a game table with only these
+    seasons, of the form "20142015".}
+  \item{date.check}{Try and download files without known dates.}
+  \item{override.days.back}{Force download for those days previous to
+    this one.}
+  \item{verbose}{Print extra output information.}
+  \item{...}{Arguments to pass to download.single.game().}
   
 }
 \details{

@@ -4,6 +4,7 @@ fix.names.manually <- function (master.list) {
     
   #one name, two players.
   master.list$first[which(master.list$last=="PICARD" & master.list$first=="ALEXANDRE" & master.list$pos == "D")] <- "ALEXANDRE R."
+  master.list$first[which(master.list$last=="GREEN" & master.list$first=="MIKE" & master.list$pos == "C")] <- "MICHAEL G."
   
   #manual fixes.
   master.list$last[which(master.list$last=="ANDERSSON" & master.list$first=="CRAIG")] <- "ANDERSON"
@@ -43,6 +44,9 @@ fix.names.manually <- function (master.list) {
   master.list$first[which(master.list$last=="DUMONT" & master.list$first=="J P")] <- "JEAN-PIERRE"
   master.list$first[which(master.list$last=="DUMONT" & master.list$first=="J-P")] <- "JEAN-PIERRE"
   master.list$first[which(master.list$last=="EARL" & master.list$first=="ROBBIE")] <- "ROBERT"
+
+  master.list$first[which(master.list$last=="ENSTROM" & master.list$first=="TOBY")] <- "TOBIAS"  ## 2014-10-19
+  
   master.list$first[which(master.list$last=="FERNANDEZ" & master.list$first=="EMMANUEL")] <- "MANNY"
   master.list$first[which(master.list$last=="FROLOV" & master.list$first=="ALEXANDER")] <- "ALEX"
   master.list$first[which(master.list$first=="TJ")] <- "T.J."
@@ -179,3 +183,34 @@ fix.names.manually <- function (master.list) {
   
   return(master.list)
 }
+
+
+
+
+
+.simpleCap <- function(x, ch=" ", ch2=ch) {
+    s <- strsplit(x, ch)[[1]]
+    paste(toupper(substring(s, 1, 1)), tolower(substring(s, 2)),
+          sep = "", collapse = ch)
+}
+
+manual.patches <- function (roster.unique) {
+
+    roster.unique$first <- sapply(roster.unique$first, .simpleCap)
+    roster.unique$first <- sapply(roster.unique$first, .simpleCap, "-")
+    #roster.unique$first <- sapply(roster.unique$first, .simpleCap, "\\.")
+    
+    roster.unique$last <- sapply(roster.unique$last, .simpleCap)
+    roster.unique$last <- sapply(roster.unique$last, .simpleCap, "-")
+    #roster.unique$last <- sapply(roster.unique$last, .simpleCap, "\\.")
+    
+    substr(roster.unique$last[grep("^Mac", roster.unique$last)], 4,4) <-
+        toupper(substr(roster.unique$last[grep("^Mac", roster.unique$last)], 4,4))
+    substr(roster.unique$last[grep("^Mc", roster.unique$last)], 3,3) <-
+        toupper(substr(roster.unique$last[grep("^Mc", roster.unique$last)], 3,3))
+    roster.unique$last <- gsub("^Van ", "van ", roster.unique$last)
+    roster.unique$firstlast <- paste(roster.unique$first, roster.unique$last)
+    return(roster.unique)
+    
+}
+

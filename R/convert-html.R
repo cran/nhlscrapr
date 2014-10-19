@@ -2,23 +2,17 @@
 # Functions for processing HTML files raw.
 
 get.game.start.end <- function(es.html) {
+    ## es.html <- '<td align="center" style="font-size: 10px;font-weight:bold">Start&nbsp;12:06&nbsp;PDT</td>'
 
-  timevector <- ""
-  g1 <- grep("[0-9]{1,2}:[0-9]{1,2}.*[0-9]{1,2}:[0-9]{1,2}", es.html)
-  if (length(g1) > 0) timevector <- es.html[g1[1]] else if (length(es.html)>1) {
-    game2 <- paste0(es.html[-length(es.html)], es.html[-1])
-    g1 <- grep("[0-9]{1,2}:[0-9]{1,2}.*[0-9]{1,2}:[0-9]{1,2}", game2)
-    if (length(g1) > 0) timevector <- game2[g1[1]]
-  }
-  timevector <- gsub("&nbsp;", " ", timevector)
+    es.html <- gsub("&nbsp;", " ", es.html)
 
-  start.time <- gsub(".*([Ss]tart|[Ss]tart Time|[Dd]ebut|D\u0082but) *([0-9]{1,2}:[0-9]{2} *[APM]{0,2} *[A-Z]{0,3}).*", "\\2", timevector)
-  start.time[start.time==timevector] <- ""
+    start.time.proto <- unlist(regmatches(es.html, gregexpr("([Ss]tart|[Ss]tart Time|[Dd]ebut|D\u0082but) *([0-9]{1,2}:[0-9]{2} *[APM]{0,2} *[A-Z]{0,3})", es.html)))
+    start.time <- gsub ("([Ss]tart|[Ss]tart Time|[Dd]ebut|D\u0082but) *([0-9]{1,2}:[0-9]{2} *[APM]{0,2} *[A-Z]{0,3})", "\\2", start.time.proto)
 
-  end.time <- gsub(".*(End|End Time|Fin) *([0-9]{1,2}:[0-9]{2} *[APM]{0,2} *[A-Z]{0,3}).*", "\\2", timevector)
-  end.time[end.time==timevector] <- ""
+    end.time.proto <- unlist(regmatches(es.html, gregexpr("(End|End Time|Fin) *([0-9]{1,2}:[0-9]{2} *[APM]{0,2} *[A-Z]{0,3})", es.html)))
+    end.time <- gsub ("(End|End Time|Fin) *([0-9]{1,2}:[0-9]{2} *[APM]{0,2} *[A-Z]{0,3})", "\\2", end.time.proto)
 
-  return(c(start.time, end.time))
+    return(c(start.time, end.time))
   
 }
 
@@ -280,9 +274,10 @@ process.pl.new <- function (pl.html) {
     pl.reduced <- pl.html[sort(c(find.1, find.2))]
     pl.reduced <- gsub("&nbsp;", ", ", pl.reduced)
     pl.reduced <- gsub("; ", ", ", pl.reduced)
+    pl.reduced <- gsub("[\uC9\uCA\uCB]", "E", pl.reduced)
 
     # p: player id.
-    pl.reduced.1 <- gsub("<font style=\"cursor:hand;\" title=\"([A-Za-z ]+) - ([A-Za-z' \\.-]+)\">([0-9]+).*", "p;\\1;\\2;\\3", pl.reduced)
+    pl.reduced.1 <- gsub("<font style=\"cursor:hand;\" title=\"([A-Za-z ]+) - ([A-Za-z' \\.\\(\\)-]+)\">([0-9]+).*", "p;\\1;\\2;\\3", pl.reduced)
     # s: time
     pl.reduced.1 <- gsub("<td class=\"[a-z \\+]* \\+ bborder\" align=\"center\">([0-9]+):([0-9]+)<br.*", "s;\\1;\\2;", pl.reduced.1)
     # q: period number.
@@ -343,6 +338,7 @@ process.pl.new <- function (pl.html) {
       current.event$event <- as.numeric(pl.grid[2,row])
       coln <- 6
       ttype <- FALSE
+      homeyet <- FALSE
     }
     if (pl.grid[1, row] == "q") current.event$period <- as.numeric(pl.grid[2,row])
     if (pl.grid[1, row] == "s") current.event$seconds <- 60*as.numeric(pl.grid[2,row])+as.numeric(pl.grid[3,row])
@@ -353,7 +349,7 @@ process.pl.new <- function (pl.html) {
 #      current.event[1,coln] <- match(paste(pl.grid[3:4,row], collapse=" "),
 #                                     paste(players[,2],players[,3]))
       current.event[1,coln] <- paste(pl.grid[4:3,row], collapse=" ")  #pl.grid[4,row]  #
-      if (coln<17) coln <- coln + 1  
+      if (coln != 17 && coln != 11) coln <- coln + 1  
     }
     if (pl.grid[1, row] == "b") coln <- 12    #home team now.
   }
@@ -670,7 +666,7 @@ process.es.new <- function(es.html) {
 
 
 integrate.new.pieces <- function (es.html, pl.html) {
-  #load("nhlr-data/20072008-20001.RData")
+  #load("nhlr-data/20082009-20022.RData")
   #es.html=game.rec$es; pl.html=game.rec$pl
   
   es.table <- try(process.es.new(es.html), TRUE)

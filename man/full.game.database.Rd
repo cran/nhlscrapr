@@ -15,12 +15,14 @@ process them immediately.
   download.single.game (season="20122013",
                         gcode="20001",
                         rdata.folder="nhlr-data",
-                        verbose=TRUE)
+                        verbose=TRUE,
+                        wait=20)
   download.games       (games=full.game.database(),
-                        rdata.folder="nhlr-data")
+                        rdata.folder="nhlr-data",
+                        ...)
 }
 \arguments{
-  \item{extra.seasons}{Beyond 20132014, adds data for additional seasons
+  \item{extra.seasons}{Beyond 20142015, adds data for additional seasons
   (assuming nhlscrapr is not supported and updated before the season begins.}
   \item{season}{A character string for the two years specifying an NHL
     season.}
@@ -29,7 +31,10 @@ process them immediately.
   which to save the downloaded files. Will be created if it does not
   exist.}
   \item{verbose}{Report additional messages.}
-  \item{games}{A game database, such as the one produced by full.game.database().}
+  \item{wait}{Amount of time in seconds to wait between game downloads.}
+  \item{games}{A game database, such as the one produced by
+    full.game.database().}
+  \item{...}{Arguments to pass to download.single.game().}
 }
 \details{
   full.game.database() gives ID numbers for all regular-season and
@@ -64,7 +69,7 @@ process them immediately.
   game.table <- full.game.database()[201:220,]
 
   #Download one game.
-  download.single.game(game.table$season[1], game.table$gcode[1])
+  download.single.game(game.table$season[1], game.table$gcode[1], wait=1)
 
   #Download all games.
 

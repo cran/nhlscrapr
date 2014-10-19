@@ -4,39 +4,62 @@
 #Block the seasons into 4. This will make it easier to add new games as time goes along.
 season.block <- function (season) {
   year <- as.numeric(substr(season,1,4))
-  1 + 1*(year >= 2005) + 1*(year >= 2008) + 1*(year >= 2011)
+  1 + 1*(year >= 2005) + 1*(year >= 2007) + 1*(year >= 2009) + 1*(year >= 2011) + 1*(year >= 2013) 
+  
 }
+
+compare.CDF <- function (original, target, range=1:200) {
+  #range=1:200
+  
+  original <- sort(original); target <- sort(target)
+  oq <- quantile(original, seq(0,1,by=0.001), na.rm=TRUE)
+  tq <- quantile(target, seq(0,1,by=0.001), na.rm=TRUE)
+
+  values <- sapply(range, function(rr) mean(tq[oq==rr]))
+  if (is.na(values[1])) values[1] <- range[1]
+
+  picks <- 2:length(values)
+  for (kk in picks[is.na(values[-1])]) values[kk] <- values[kk-1] + 1
+  values[values > max(range)] <- max(range)
+  names(values) <- range
+  values
+}
+
+
 
 make.adjusted.distance.homeaway.table <- function (shots.in) { #,
 
   #shots.in = shot.data
+  message ("Creating distance adjustment tables.")
   shots.in$seasonblock <- season.block(shots.in$season)
   seasonblocks <- 1:max(shots.in$seasonblock)
-  shots.split <- lapply(seasonblocks, function (bb) shots.in[shots.in$seasonblock==bb,  c("type", "ev.team", "hometeam", "awayteam", "distance")])
+  shots.split <- lapply(seasonblocks,
+                        function (bb) shots.in[shots.in$seasonblock==bb,
+                                               c("type", "ev.team", "hometeam", "awayteam", "distance")])
   
   split.table <- expand.grid (seasonblock=seasonblocks, type=unique(shots.in$type),
                               teams=unique(shots.in$hometeam), stringsAsFactors = FALSE)
 
-  split.table$dilation <- sapply (1:nrow(split.table), function(rr) {
+  quantile.adjust <- sapply (1:nrow(split.table), function(rr) {
     prop <- split.table[rr,]
-    home.mean <- mean(shots.split[[prop[[1]]]]$distance[shots.split[[prop[[1]]]]$type == prop[[2]] &
-                                                        shots.split[[prop[[1]]]]$ev.team == prop[[3]] &
-                                                        shots.split[[prop[[1]]]]$hometeam == prop[[3]]], na.rm=TRUE)
-    away.mean <- mean(shots.split[[prop[[1]]]]$distance[shots.split[[prop[[1]]]]$type == prop[[2]] &
-                                                        shots.split[[prop[[1]]]]$ev.team == prop[[3]] &
-                                                        shots.split[[prop[[1]]]]$awayteam == prop[[3]]], na.rm=TRUE)
-    away.mean/home.mean
+    ## message (prop)
+    original <- shots.split[[prop[[1]]]]$distance[shots.split[[prop[[1]]]]$type == prop[[2]] &
+                                                   shots.split[[prop[[1]]]]$ev.team == prop[[3]] &
+                                                   shots.split[[prop[[1]]]]$hometeam == prop[[3]]]
+    target <- shots.split[[prop[[1]]]]$distance[shots.split[[prop[[1]]]]$type == prop[[2]] &
+                                                shots.split[[prop[[1]]]]$ev.team == prop[[3]] &
+                                                shots.split[[prop[[1]]]]$awayteam == prop[[3]]]
+    compare.CDF (original, target)
   })
-  split.table$dilation[is.na(split.table$dilation)] <- 1
-  return (split.table)
+  
+  return (list(split.table=split.table, quantile.adjust=quantile.adjust))
 }
 
 
 update.adjusted.distance <- function (shots.in,
-                                      split.table,
-                                      shrinkage.factor=1) {
+                                      split.object) {
   
-  #shots.in=shot.data; split.table=distance.adjust; shrinkage.factor=1
+  #shots.in=shot.data; split.object=distance.adjust
   shots.in$seasonblock <- season.block(shots.in$season)
   seasonblocks <- 1:max(shots.in$seasonblock)
   shots.in$adjusted.distance <- shots.in$distance
@@ -46,11 +69,14 @@ update.adjusted.distance <- function (shots.in,
                                                c("type", "ev.team", "hometeam", "awayteam",
                                                  "distance", "adjusted.distance")])
 
-  for (rr in 1:nrow(split.table)) {
-    prop <- split.table[rr,]
-    rows <- which (shots.split[[prop[[1]]]]$type == prop[[2]] & shots.split[[prop[[1]]]]$hometeam == prop[[3]])
-    shots.split[[prop[[1]]]]$adjusted.distance[rows] <- shots.split[[prop[[1]]]]$adjusted.distance[rows]*
-      (shrinkage.factor*prop[[4]] + (1-shrinkage.factor))  #away.mean/home.mean
+  for (rr in 1:nrow(split.object$split.table)) {
+    prop <- split.object$split.table[rr,]
+  ##  message(prop)
+    rows <- which (shots.split[[prop[[1]]]]$type == prop[[2]] &
+                   shots.split[[prop[[1]]]]$hometeam == prop[[3]] &
+                   shots.split[[prop[[1]]]]$distance > 0)
+    if (length(rows)>0) shots.split[[prop[[1]]]]$adjusted.distance[rows] <-
+      split.object$quantile.adjust[shots.split[[prop[[1]]]]$distance[rows], rr]
   }
 
   for (bb in seasonblocks) 
@@ -63,7 +89,9 @@ update.adjusted.distance <- function (shots.in,
 
 
 create.adjusted.distance <- function (sub.data, distance.adjust=NULL) {   #, split.table
-  #sub.data=secondary.data; distance.adjust=NULL
+  ## load ("../../nhlscrapr-probs-0.RData")
+  ## sub.data=grand.data; distance.adjust=NULL
+  
   message ("Correcting for Distance Anomalies.")
   sub.data$adjusted.distance <- NA
   
@@ -83,6 +111,39 @@ create.adjusted.distance <- function (sub.data, distance.adjust=NULL) {   #, spl
 }
 
 
+#impute locations for MISS shots.
+
+impute.miss.xy <- function (grand.data) {
+  #load ("ainty.RData")
+  
+  message ("Imputing missing shot locations using saved shots-on-goal.")
+  sub.data <- grand.data[,c("etype","type","adjusted.distance","xcoord","ycoord")]
+
+  etypes <- c("SHOT","MISS")   #shots and misses have the same distance distributions.
+  shot.rows <- which (sub.data$etype %in% etypes)
+  tiny <- sub.data[shot.rows,]
+  tiny$adjusted.distance <- round(tiny$adjusted.distance)
+
+  for (dd in 1:200) {
+    if (dd %% 10 == 0) message ("Imputing distance from net: ", dd)
+    shotset <- which(tiny$adjusted.distance == dd & !is.na(tiny$xcoord) & !is.na(tiny$ycoord)) #tiny$etype=="SHOT" & 
+    missset <- which(tiny$adjusted.distance == dd & (is.na(tiny$xcoord) | is.na(tiny$ycoord)))  #tiny$etype=="MISS" & 
+   
+    if (length(shotset) > 0 & length(missset) > 0) {
+      picks <- sample(shotset, length(missset), replace=TRUE)
+      tiny$xcoord[missset] <- tiny$xcoord[picks]
+      tiny$ycoord[missset] <- tiny$ycoord[picks]
+    }
+  }
+
+  grand.data[shot.rows, c("xcoord","ycoord")] <- tiny[, c("xcoord","ycoord")]
+  return(grand.data)
+  
+}
+
+## par(mfrow=c(2,1)); hist(tiny$adjusted.distance[tiny$etype=="MISS"]);  hist(tiny$adjusted.distance[tiny$etype=="SHOT"]); 
+
+
 
 #######################################################################
 ## Bin into quadrilaterals.
@@ -99,8 +160,8 @@ in.tri.rev <- function (tr=matrix(c(0,0.5,1, 0,1,0), nrow=3), xy.points) in.tria
 
 pick.section <- function (xy.points) {
  
-  in.1 <- apply(quadsarray[1:3,,], 3, in.tri.rev, xy.points)
-  in.2 <- apply(quadsarray[c(1,3,4),,], 3, in.tri.rev, xy.points)
+  in.1 <- apply(nhlscrapr::quadsarray[1:3,,], 3, in.tri.rev, xy.points)
+  in.2 <- apply(nhlscrapr::quadsarray[c(1,3,4),,], 3, in.tri.rev, xy.points)
   picks <- in.1 | in.2
   picks[is.na(picks)] <- FALSE
   
@@ -514,3 +575,29 @@ NP.score <- function(grand.data, seconds=20) {
 
 }
 
+
+add.game.adjacency <- function (games) {
+  
+  games$homeafterhome <- games$homeafteraway <- games$awayafterhome <- games$awayafteraway <- 0
+
+  teams <- unique(c(games$hometeam, games$awayteam)); teams <- teams[nchar(teams)>0]
+  lastgame <- rep(as.Date("January 1 2000", format="%B %d %Y"), length(teams))
+  last.home <- rep(0, length(teams))
+  
+  for (kk in 1:nrow(games)) if (nchar(games$hometeam[kk]) > 0 & nchar(games$awayteam[kk]) > 0 & !is.na(games$date[kk])){
+    if (games$date[kk] == lastgame[which(teams == games$hometeam[kk])] + 1) {
+    games$homeafterhome[kk] <- last.home[which(teams == games$hometeam[kk])]
+    games$homeafteraway[kk] <- 1-last.home[which(teams == games$hometeam[kk])]
+  }
+    if (games$date[kk] == lastgame[which(teams == games$awayteam[kk])] + 1) {
+      games$awayafterhome[kk] <- last.home[which(teams == games$awayteam[kk])]
+      games$awayafteraway[kk] <- 1-last.home[which(teams == games$awayteam[kk])]
+    }
+    lastgame[which(teams == games$hometeam[kk])] <- lastgame[which(teams == games$awayteam[kk])] <- games$date[kk]
+    last.home[which(teams == games$hometeam[kk])] <- 1
+    last.home[which(teams == games$awayteam[kk])] <- 0
+  }
+
+  return(games)
+
+}
