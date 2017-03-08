@@ -1,10 +1,10 @@
-71f6df0615ee346e254977c8a27e79c1 *DESCRIPTION
+9f7d30eb6977b1d38f20ae11570d19f2 *DESCRIPTION
 ebb31200084c3bcb8698a7c068fe68aa *NAMESPACE
 2cb5714e2c13081e2ee3259d7e1e63ef *R/GIF.R
 2f0f0c75f06166acdf6d2365065b4735 *R/convert-gif.R
 0f6caf33a6b41f74dc78d52983850af2 *R/convert-html.R
 c6c4d6db7e61153529e99796f466bc0d *R/convert-json.R
-41639bfe6178d07dea1372b5a53ac4d9 *R/integrate.R
+6849cde6c4a7260851c758825ec878f0 *R/integrate.R
 710cb0e1ce8cd51efc8c2617fe3c8424 *R/manual-name-fixes.R
 cfc87eb1c40f96a7d8d1aeee5f9841fa *R/operations.R
 fe5261d3e1b3b6d515ca1b958834a2f8 *R/subzone-adjustments.R

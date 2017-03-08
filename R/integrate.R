@@ -178,6 +178,7 @@ download.single.game <- function (season="20122013", gcode="20001", rdata.folder
   if (season %in% c("20022003", "20032004", "20052006", "20062007")) {
     
     infile <- paste("http://www.nhl.com/scores/htmlreports/",season,"/SCH",gcode,".gif",sep="")
+    dir.create(rdata.folder, showWarnings = FALSE)
     outfile <- paste0(rdata.folder,"/",season,"H",gcode,".gif")
     g1 <- try(download.file(infile, outfile, mode="wb"), TRUE)
     if (class(g1) == "try-error") {
